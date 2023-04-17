@@ -1,14 +1,26 @@
 const { userService } = require("../services/users.service");
 const { serverErr } = require("../utils/errorHandler");
+const { sendMail } = require('../utils/notification');
 
 async function addUser(req, res) {
   const user = req.body;
 
   return await userService
     .addUser(user)
-    .then((data) => {
+    .then(async (data) => {
       console.log(data);
-      res.status(200).send(JSON.stringify({
+
+      await sendMail(`Hey ${data.name}, your User registration is successful`, JSON.stringify({
+        _id: data._id,
+        name: data.name,
+        email: data.email,
+        username: data.userId,
+        role: data.userType,
+        status: data.userStatus,
+        createdAt: data.createdAt
+      }), data.email);
+
+      return res.status(200).send(JSON.stringify({
         status: 'success',
         message: 'User registered successfully',
         data: data
@@ -72,9 +84,20 @@ async function updateUser(req, res) {
 
   return await userService
     .updateUser(id, update)
-    .then((data) => {
+    .then(async (data) => {
       console.log(data);
-      res.status(200).send(JSON.stringify({
+
+      await sendMail(`Hey ${data.name}, your profile update is successful`, JSON.stringify({
+        _id: data._id,
+        name: data.name,
+        email: data.email,
+        username: data.userId,
+        role: data.userType,
+        status: data.userStatus,
+        createdAt: data.createdAt
+      }), data.email);
+
+      return res.status(200).send(JSON.stringify({
         status: 'success',
         message: 'User updated successfully',
         data: data

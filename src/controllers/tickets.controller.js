@@ -2,11 +2,14 @@ const { db } = require('../models/index.model');
 const { ticketService } = require('../services/tickets.service');
 const constants = require('../utils/constants');
 const { serverErr } = require('../utils/errorHandler');
+const { sendMail } = require('../utils/notification');
 
 async function createTicket(req, res) {
   const ticket = req.body;
 
   ticket.reporter = req._id;
+
+  const user = await db.users.findOne({ _id: req._id })
 
   //finding engineer to assign
   const assignee = await db.users.findOne({
@@ -18,8 +21,13 @@ async function createTicket(req, res) {
 
   return await ticketService
     .createTicket(ticket)
-    .then((data) => {
+    .then(async (data) => {
       console.log(data);
+
+      await sendMail(`Hi ${user.name}, your ticket #${data._id} has been raised!`, JSON.stringify({
+        data
+      }), [user.email, assignee.email]);
+
       res.status(200).send(JSON.stringify({
         status: 'success',
         message: `New ticket has been raised to ${assignee.name}`,
@@ -114,9 +122,12 @@ async function updateTicket(req, res) {
   update.ticketPriority = req.body.ticketPriority;
   update.ticketStatus = req.body.status;
 
+
   try {
     const ticket = await ticketService.getTicketById(ticketId);
     const user = await db.users.findOne({ _id: req._id });
+
+    const assignee = await db.users.findOne({ _id: ticket.assignee });
 
     if (!ticket || ticket.length === 0) {
       return res.status(404).send(JSON.stringify({
@@ -147,8 +158,13 @@ async function updateTicket(req, res) {
 
     return await ticketService
       .updateTicket(ticketId, update)
-      .then((data) => {
+      .then(async (data) => {
         console.log(data);
+
+        await sendMail(`Hi ${user.name}, the ticket #${data._id} has been reviewed and closed!`, JSON.stringify({
+          data
+        }), [user.email, assignee.email]);
+
         return res.status(200).send(JSON.stringify({
           status: 'success',
           message: 'Ticket updated successfully',
