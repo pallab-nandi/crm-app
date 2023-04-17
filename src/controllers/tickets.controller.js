@@ -1,5 +1,5 @@
-const { db } = require('../models/index.model');
 const { ticketService } = require('../services/tickets.service');
+const { userService } = require('../services/users.service');
 const constants = require('../utils/constants');
 const { serverErr } = require('../utils/errorHandler');
 const { sendMail } = require('../utils/notification');
@@ -9,10 +9,10 @@ async function createTicket(req, res) {
 
   ticket.reporter = req._id;
 
-  const user = await db.users.findOne({ _id: req._id })
+  const user = await userService.getUserById(req._id);
 
   //finding engineer to assign
-  const assignee = await db.users.findOne({
+  const assignee = await userService.findOneByQuery({
     userType: constants.userTypes.engineer,
     userStatus: constants.userStatus.approved
   })
@@ -40,13 +40,13 @@ async function createTicket(req, res) {
 async function getTickets(req, res) {
   let queryObj = {};
 
-  const user = await db.users.findOne({ _id: req._id });
+  const user = await userService.getUserById(req._id);
 
   if (user.userType === constants.userTypes.engineer && user.userStatus === constants.userStatus.approved) {
     queryObj = { $or: [{ assignee: req._id }, { requestor: req._id }] };
   } else if (user.userType === constants.userTypes.customer) {
     queryObj.reporter = req._id;
-  } else if (user.userType === constants.userTypes.admin && user.userStatus.approved) {
+  } else if (user.userType === constants.userTypes.admin && user.userStatus === constants.userStatus.approved) {
     queryObj = {};
   } else {
     return res.status(400).send(JSON.stringify({
@@ -59,7 +59,7 @@ async function getTickets(req, res) {
 
   return await ticketService
     .getAllTicket(queryObj)
-    .then((data) => {
+    .then(async (data) => {
       console.log(data);
       if (!data || data.length === 0) {
         return res.status(404).send(JSON.stringify({
@@ -67,6 +67,7 @@ async function getTickets(req, res) {
           message: 'No Ticket data available'
         }))
       }
+
       return res.status(200).send(JSON.stringify({
         status: 'success',
         message: 'Tickets fetched successfully',
@@ -81,7 +82,7 @@ async function getTicketsById(req, res) {
 
   try {
     const ticket = await ticketService.getTicketById(ticketId);
-    const user = await db.users.findOne(req._id);
+    const user = await userService.getUserById(req._id);
 
     if (!ticket || ticket.length === 0) {
       return res.status(404).send(JSON.stringify({
@@ -120,14 +121,14 @@ async function updateTicket(req, res) {
   const ticketId = req.params.id;
   let update = {};
   update.ticketPriority = req.body.ticketPriority;
-  update.ticketStatus = req.body.status;
+  update.status = req.body.status;
 
 
   try {
     const ticket = await ticketService.getTicketById(ticketId);
-    const user = await db.users.findOne({ _id: req._id });
+    const user = await userService.getUserById(req._id);
 
-    const assignee = await db.users.findOne({ _id: ticket.assignee });
+    const assignee = await userService.getUserById(ticket.assignee);
 
     if (!ticket || ticket.length === 0) {
       return res.status(404).send(JSON.stringify({
@@ -161,7 +162,7 @@ async function updateTicket(req, res) {
       .then(async (data) => {
         console.log(data);
 
-        await sendMail(`Hi ${user.name}, the ticket #${data._id} has been reviewed and closed!`, JSON.stringify({
+        await sendMail(`Hi ${user.name}, the ticket #${data._id} has been updated!`, JSON.stringify({
           data
         }), [user.email, assignee.email]);
 

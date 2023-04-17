@@ -5,7 +5,7 @@ class AuthService {
 
   async signUp(user) {
     return await userService
-      .addUsers(user)
+      .addUser(user)
       .then((data) => {
         if (data.userType && data.userType === 'CUSTOMER') data.userStatus = 'APPROVED'
         return data;

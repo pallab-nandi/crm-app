@@ -5,12 +5,16 @@ const { sendMail } = require('../utils/notification');
 async function addUser(req, res) {
   const user = req.body;
 
+  if (!user.userType) user.userType = 'CUSTOMER';
+
+  if (user.userStatus) delete user.userStatus;
+
   return await userService
     .addUser(user)
     .then(async (data) => {
       console.log(data);
 
-      await sendMail(`Hey ${data.name}, your User registration is successful`, JSON.stringify({
+      await sendMail(`Hey ${data.name}, your User registration is successful in CRM App`, JSON.stringify({
         _id: data._id,
         name: data.name,
         email: data.email,
@@ -87,7 +91,7 @@ async function updateUser(req, res) {
     .then(async (data) => {
       console.log(data);
 
-      await sendMail(`Hey ${data.name}, your profile update is successful`, JSON.stringify({
+      await sendMail(`Hey ${data.name}, your profile update is successful in CRM App`, JSON.stringify({
         _id: data._id,
         name: data.name,
         email: data.email,

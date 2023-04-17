@@ -27,13 +27,25 @@ class UserService {
   updateUser(id, update) {
     return this
       .schema
-      .findOneAndUpdate({ _id: id }, update)
+      .findOneAndUpdate({ _id: id }, update, { new: true })
   }
 
   deleteUser(id) {
     return this
       .schema
       .deleteOne({ _id: id })
+  }
+
+  findOneByUserId(userId) {
+    return this
+      .schema
+      .findOne({ userId: userId })
+  }
+
+  findOneByQuery(query) {
+    return this
+      .schema
+      .findOne(query)
   }
 }
 

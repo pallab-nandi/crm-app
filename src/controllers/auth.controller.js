@@ -5,12 +5,16 @@ const { sendMail } = require('../utils/notification');
 async function signUp(req, res) {
   let user = req.body;
 
+  if (!user.userType) user.userType = 'CUSTOMER';
+
+  if (user.userStatus) delete user.userStatus;
+
   return await authService
     .signUp(user)
     .then(async (data) => {
       console.log(data);
 
-      await sendMail(`Hey ${data.name}, your User registration is successful`, JSON.stringify({
+      await sendMail(`Hey ${data.name}, your User registration is successful in CRM App`, JSON.stringify({
         _id: data._id,
         name: data.name,
         email: data.email,
