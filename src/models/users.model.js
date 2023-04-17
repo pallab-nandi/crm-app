@@ -34,6 +34,11 @@ const userSchema = new mongoose.Schema({
   userStatus: {
     type: String,
     required: true,
+    enum: [
+      'APPROVED',
+      'PENDING',
+      'REJECTED'
+    ],
     default: 'PENDING'
   },
   createdAt: {
